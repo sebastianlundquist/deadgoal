@@ -22,9 +22,15 @@
         this.mass = mass;
         this.color = color;
 
-        this.update = function(balls) {
-            this.draw();
+        this.draw = function() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+            ctx.closePath();
+        };
 
+        this.resolveCollision = function() {
             for(var i = 0; i < balls.length; i++) {
                 if(this === balls[i]) continue;
                 if(getDistance(this.x, this.y, balls[i].x, balls[i].y) - this.radius - balls[i].radius < 0) {
@@ -32,8 +38,9 @@
                     resolveCollision(this, balls[i]);
                 }
             }
+        };
 
-            //if (this.velocity.x * x + this.velocity.y * y >= this.radius)
+        this.applyGravity = function() {
             if(this.x - this.radius <= 0 || this.x + this.radius >= ctx.canvas.width) {
                 this.velocity.x = -dampening * this.velocity.x;
             }
@@ -44,46 +51,41 @@
             else {
                 this.velocity.y += gravity;
             }
-
             this.x += this.velocity.x;
             this.y += this.velocity.y;
+        };
 
-            // Nudging from edges
+        this.clearEdges = function() {
             if(this.x + this.radius > ctx.canvas.width) {
                 this.x = ctx.canvas.width - this.radius;
-                this.velocity.x *= 0.9;
+                this.velocity.x *= dampening;
             }
             else if(this.x < this.radius) {
                 this.x = this.radius;
-                this.velocity.x *= 0.9;
+                this.velocity.x *= dampening;
             }
             if(this.y + this.radius > ctx.canvas.height) {
                 this.y = ctx.canvas.height - this.radius;
-                this.velocity.y *= 0.9;
+                this.velocity.y *= dampening;
             }
             else if(this.y < this.radius) {
                 this.y = this.radius;
-                this.velocity.y *= 0.9;
+                this.velocity.y *= dampening;
             }
-
-            if(Math.abs(this.velocity.x) < 0.1) {
-                this.velocity.x = 0;
-            }
-            if(Math.abs(this.velocity.y) < 1 && this.y + this.radius >= ctx.canvas.height - 10) {
-                this.velocity.y = 0;
-            }
-
-            console.log("y: " + this.y);
-            console.log("v: " + this.velocity.y);
         };
 
-        this.draw = function() {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-            ctx.fillStyle = this.color;
-            ctx.fill();
-            ctx.closePath();
-        }
+        this.limitBouncing = function() {
+            if(Math.abs(this.velocity.x) < 0.1) this.velocity.x = 0;
+            if(Math.abs(this.velocity.y) < 1 && this.y + this.radius >= ctx.canvas.height - 10) this.velocity.y = 0;
+        };
+
+        this.update = function(balls) {
+            this.draw();
+            this.resolveCollision();
+            this.applyGravity();
+            this.clearEdges();
+            this.limitBouncing();
+        };
     }
 
     function rotate(velocity, angle) {
@@ -159,41 +161,28 @@
             ctx.canvas.width = window.innerWidth;
             ctx.canvas.height = window.innerWidth * 9 / 16;
         }
-        init();
     }
 
     function init() {
+        updateCanvas();
         balls = [];
         for (var i = 0; i < 30; i++) {
-            var width;
-            var height;
             var radius = Math.floor((Math.random() * 20) + 10);
             var mass = 1;
             var color = getRandomColor();
-
-            if(window.innerWidth >= window.innerHeight * 16 / 9) {
-                width = window.innerHeight * 16 / 9;
-                height = window.innerHeight;
-            }
-            else {
-                width = window.innerWidth;
-                height = window.innerWidth * 9 / 16;
-            }
-
-            var x = randIntBetween(radius, width - radius);
-            var y = randIntBetween(radius, height - radius);
+            var x = randIntBetween(radius, ctx.canvas.width - radius);
+            var y = randIntBetween(radius, ctx.canvas.height - radius);
 
             // Makes sure no balls overlap when they are generated
             if(i !== 0) {
                 for(var j = 0; j < balls.length; j++) {
                     if(getDistance(x, y, balls[j].x, balls[j].y) - radius - balls[j].radius < 0) {
-                        x = randIntBetween(radius, width - radius);
-                        y = randIntBetween(radius, height - radius);
+                        x = randIntBetween(radius, ctx.canvas.width - radius);
+                        y = randIntBetween(radius, ctx.canvas.height - radius);
                         j = -1;
                     }
                 }
             }
-
             balls.push(new Ball(x, y, radius, mass, color));
         }
     }
@@ -201,21 +190,6 @@
     function animate() {
         requestAnimationFrame(animate);
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        /*
-        ball1.update();
-        ball2.x = mouse.x;
-        ball2.y = mouse.y;
-        ball2.update();
-
-        if(getDistance(ball1.x, ball1.y, ball2.x, ball2.y) < ball1.radius + ball2.radius) {
-            ball1.color = 'red';
-        }
-        else {
-            ball1.color = 'black';
-        }
-
-        console.log(getDistance(ball1.x, ball1.y, ball2.x, ball2.y));
-        */
         for(var i = 0; i < balls.length; i++) {
             balls[i].update(balls);
         }

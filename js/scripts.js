@@ -2,9 +2,9 @@
     var c = document.getElementById('gameCanvas');
     var ctx = c.getContext('2d');
 
-    var ball1;
-    var ball2;
     var balls;
+    var gravity = 0.5;
+    var dampening = 0.7;
 
     var mouse = {
         x: 10,
@@ -15,8 +15,8 @@
         this.x = x;
         this.y = y;
         this.velocity = {
-            x: Math.random() - 0.5,
-            y: Math.random() - 0.5
+            x: 0,
+            y: 0
         };
         this.radius = radius;
         this.mass = mass;
@@ -33,17 +33,48 @@
                 }
             }
 
+            //if (this.velocity.x * x + this.velocity.y * y >= this.radius)
             if(this.x - this.radius <= 0 || this.x + this.radius >= ctx.canvas.width) {
-                console.log(ctx.canvas.width);
-                this.velocity.x = -this.velocity.x;
+                this.velocity.x = -dampening * this.velocity.x;
             }
-            if(this.y - this.radius <= 0 || this.y + this.radius >= ctx.canvas.height) {
-                console.log(ctx.canvas.height);
-                this.velocity.y = -this.velocity.y;
+            else if(this.y - this.radius <= 0 || this.y + this.radius >= ctx.canvas.height) {
+                this.velocity.y = -dampening * this.velocity.y;
+                this.velocity.x *= 0.97;
+            }
+            else {
+                this.velocity.y += gravity;
             }
 
             this.x += this.velocity.x;
             this.y += this.velocity.y;
+
+            // Nudging from edges
+            if(this.x + this.radius > ctx.canvas.width) {
+                this.x = ctx.canvas.width - this.radius;
+                this.velocity.x *= 0.9;
+            }
+            else if(this.x < this.radius) {
+                this.x = this.radius;
+                this.velocity.x *= 0.9;
+            }
+            if(this.y + this.radius > ctx.canvas.height) {
+                this.y = ctx.canvas.height - this.radius;
+                this.velocity.y *= 0.9;
+            }
+            else if(this.y < this.radius) {
+                this.y = this.radius;
+                this.velocity.y *= 0.9;
+            }
+
+            if(Math.abs(this.velocity.x) < 0.1) {
+                this.velocity.x = 0;
+            }
+            if(Math.abs(this.velocity.y) < 0.1) {
+                this.velocity.y = 0;
+            }
+
+            console.log("y: " + this.y);
+            console.log("v: " + this.velocity.y);
         };
 
         this.draw = function() {
@@ -133,7 +164,7 @@
 
     function init() {
         balls = [];
-        for (var i = 0; i < 100; i++) {
+        for (var i = 0; i < 30; i++) {
             var width;
             var height;
             var radius = Math.floor((Math.random() * 20) + 10);

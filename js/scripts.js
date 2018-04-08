@@ -69,7 +69,7 @@
             if(Math.abs(this.velocity.x) < 0.1) {
                 this.velocity.x = 0;
             }
-            if(Math.abs(this.velocity.y) < 0.1) {
+            if(Math.abs(this.velocity.y) < 1 && this.y + this.radius >= ctx.canvas.height - 10) {
                 this.velocity.y = 0;
             }
 
